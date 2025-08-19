@@ -37,19 +37,19 @@ STICKER_NAME: process.env.STICKER_NAME || "DARKZONE-MD",
 // type sticker pack name 
 CUSTOM_REACT: process.env.CUSTOM_REACT || "false",
 // make this true for custum emoji react    
-CUSTOM_REACT_EMOJIS: process.env.CUSTOM_REACT_EMOJIS || "💝,💖,💗,❤️‍🩹,❤️,🧡,💛,💚,💙,💜,🤎,🖤,🤍",
+CUSTOM_REACT_EMOJIS: process.env.CUSTOM_REACT_EMOJIS || "♥️",
 // chose custom react emojis by yourself 
 DELETE_LINKS: process.env.DELETE_LINKS || "false",
 // automatic delete links witho remove member 
-OWNER_NUMBER: process.env.OWNER_NUMBER || "923306137477",
+OWNER_NUMBER: process.env.OWNER_NUMBER || "94764802314",
 // add your bot owner number
-OWNER_NAME: process.env.OWNER_NAME || "𝐸𝑅𝐹𝒜𝒩 𝒜𝐻𝑀𝒜𝒟",
+OWNER_NAME: process.env.OWNER_NAME || "GAIYA-GN",
 // add bot owner name
-DESCRIPTION: process.env.DESCRIPTION || "*© CREATER 𝐸𝑅𝐹𝒜𝒩 𝒜𝐻𝑀𝒜𝒟 *",
+DESCRIPTION: process.env.DESCRIPTION || "*© CREATER GAIYA-GN*",
 // add bot owner name    
 ALIVE_IMG: process.env.ALIVE_IMG || "https://files.catbox.moe/4964gx.jpg",
 // add img for alive msg
-LIVE_MSG: process.env.LIVE_MSG || "> HEY IM ALIVE NOW  *DARKZONE-MD*⚡",
+LIVE_MSG: process.env.LIVE_MSG || "> HEY IM ALIVE NOW  *GAIYA-GN*⚡",
 // add alive msg here 
 READ_MESSAGE: process.env.READ_MESSAGE || "false",
 // Turn true or false for automatic read msgs
@@ -73,7 +73,7 @@ AUTO_TYPING: process.env.AUTO_TYPING || "true",
 // true for automatic show typing   
 READ_CMD: process.env.READ_CMD || "false",
 // true if want mark commands as read 
-DEV: process.env.DEV || "923306137477",
+DEV: process.env.DEV || "94764802314",
 //replace with your whatsapp number        
 ANTI_VV: process.env.ANTI_VV || "true",
 // true for anti once view 
