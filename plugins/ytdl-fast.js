@@ -1,105 +1,135 @@
 const config = require('../config');
 const { cmd } = require('../command');
-const { ytsearch } = require('@dark-yasiya/yt-dl.js');
+const { getBuffer } = require('../util/fetcher');
+
+// YouTube Data API setup
+const YOUTUBE_API_KEY = 'AIzaSyDUb3ViZJBT0x5lzLjB9bGjikvp-_KnPl4';
+const DOWNLOADER_BASE = 'https://yt.david-cyril.net.ng';
 
 // MP4 video download
-
 cmd({ 
     pattern: "mp4", 
     alias: ["video"], 
     react: "🎥", 
     desc: "Download YouTube video", 
     category: "main", 
-    use: '.mp4 < Yt url or Name >', 
+    use: '.mp4 <YT url or video name>', 
     filename: __filename 
 }, async (conn, mek, m, { from, prefix, quoted, q, reply }) => { 
     try { 
         if (!q) return await reply("Please provide a YouTube URL or video name.");
         
-        const yt = await ytsearch(q);
-        if (yt.results.length < 1) return reply("No results found!");
+        // Search YouTube using Google API
+        let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encodeURIComponent(q)}&key=${YOUTUBE_API_KEY}`;
+        let searchResponse = await fetch(searchUrl);
+        let searchData = await searchResponse.json();
         
-        let yts = yt.results[0];  
-        let apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(yts.url)}`;
-        
-        let response = await fetch(apiUrl);
-        let data = await response.json();
-        
-        if (data.status !== 200 || !data.success || !data.result.download_url) {
-            return reply("Failed to fetch the video. Please try again later.");
+        if (!searchData.items || searchData.items.length === 0) {
+            return reply("No results found!");
         }
-
+        
+        let videoId = searchData.items[0].id.videoId;
+        let videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        let videoInfo = searchData.items[0].snippet;
+        
+        // Use your downloader website
+        let downloadUrl = `${DOWNLOADER_BASE}/download/mp4?url=${encodeURIComponent(videoUrl)}`;
+        
         let ytmsg = `📹 *Video Downloader*
-🎬 *Title:* ${yts.title}
-⏳ *Duration:* ${yts.timestamp}
-👀 *Views:* ${yts.views}
-👤 *Author:* ${yts.author.name}
-🔗 *Link:* ${yts.url}
+🎬 *Title:* ${videoInfo.title}
+👤 *Channel:* ${videoInfo.channelTitle}
+📅 *Published:* ${new Date(videoInfo.publishedAt).toLocaleDateString()}
+🔗 *YouTube Link:* ${videoUrl}
 > 𝐸𝑅𝐹𝒜𝒩 𝒜𝐻𝑀𝒜𝒟 ❤️`;
 
-        // Send video directly with caption
+        // Send video
         await conn.sendMessage(
             from, 
             { 
-                video: { url: data.result.download_url }, 
+                video: { url: downloadUrl }, 
                 caption: ytmsg,
-                mimetype: "video/mp4"
+                mimetype: "video/mp4",
+                fileName: `${videoInfo.title}.mp4`
             }, 
             { quoted: mek }
         );
 
     } catch (e) {
-        console.log(e);
+        console.log('MP4 Error:', e);
         reply("An error occurred. Please try again later.");
     }
 });
 
-
 // MP3 song download 
-
 cmd({ 
     pattern: "song", 
     alias: ["play", "mp3"], 
     react: "🎶", 
     desc: "Download YouTube song", 
     category: "main", 
-    use: '.song <query>', 
+    use: '.song <song name>', 
     filename: __filename 
 }, async (conn, mek, m, { from, sender, reply, q }) => { 
     try {
         if (!q) return reply("Please provide a song name or YouTube link.");
 
-        const yt = await ytsearch(q);
-        if (!yt.results.length) return reply("No results found!");
-
-        const song = yt.results[0];
-        const apiUrl = `https://apis.davidcyriltech.my.id/youtube/mp3?url=${encodeURIComponent(song.url)}`;
+        // Search YouTube using Google API
+        let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encodeURIComponent(q)}&key=${YOUTUBE_API_KEY}`;
+        let searchResponse = await fetch(searchUrl);
+        let searchData = await searchResponse.json();
         
-        const res = await fetch(apiUrl);
-        const data = await res.json();
-
-        if (!data?.result?.downloadUrl) return reply("Download failed. Try again later.");
+        if (!searchData.items || searchData.items.length === 0) {
+            return reply("No results found!");
+        }
+        
+        let videoId = searchData.items[0].id.videoId;
+        let videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        let videoInfo = searchData.items[0].snippet;
+        
+        // Use your downloader website for audio
+        let downloadUrl = `${DOWNLOADER_BASE}/download/mp3?url=${encodeURIComponent(videoUrl)}`;
 
     await conn.sendMessage(from, {
-    audio: { url: data.result.downloadUrl },
-    mimetype: "audio/mpeg",
-    fileName: `${song.title}.mp3`,
-    contextInfo: {
-        externalAdReply: {
-            title: song.title.length > 25 ? `${song.title.substring(0, 22)}...` : song.title,
-            body: "Join our WhatsApp Channel",
-            mediaType: 1,
-            thumbnailUrl: song.thumbnail.replace('default.jpg', 'hqdefault.jpg'),
-            sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
-            mediaUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
-            showAdAttribution: true,
-            renderLargerThumbnail: true
+        audio: { url: downloadUrl },
+        mimetype: "audio/mpeg",
+        fileName: `${videoInfo.title}.mp3`,
+        contextInfo: {
+            externalAdReply: {
+                title: videoInfo.title.length > 25 ? `${videoInfo.title.substring(0, 22)}...` : videoInfo.title,
+                body: "Join our WhatsApp Channel",
+                mediaType: 1,
+                thumbnailUrl: videoInfo.thumbnails.high.url,
+                sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
+                mediaUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
+                showAdAttribution: true,
+                renderLargerThumbnail: true
+            }
         }
-    }
-}, { quoted: mek });
+    }, { quoted: mek });
 
     } catch (error) {
-        console.error(error);
+        console.error('Song Error:', error);
         reply("An error occurred. Please try again.");
+    }
+});
+
+// Additional utility command to check API status
+cmd({
+    pattern: "ytstatus",
+    desc: "Check YouTube API status",
+    category: "main",
+    filename: __filename
+}, async (conn, mek, m, { reply }) => {
+    try {
+        let testUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=test&key=${YOUTUBE_API_KEY}`;
+        let response = await fetch(testUrl);
+        
+        if (response.ok) {
+            reply("✅ YouTube API is working perfectly!");
+        } else {
+            reply("❌ YouTube API connection failed");
+        }
+    } catch (e) {
+        reply("❌ YouTube API connection error");
     }
 });
