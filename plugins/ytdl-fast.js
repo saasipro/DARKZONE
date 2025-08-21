@@ -2,8 +2,23 @@ const config = require('../config');
 const { cmd } = require('../command');
 const { ytsearch } = require('@dark-yasiya/yt-dl.js');
 
-// MP4 video download
+// Alternative API endpoints
+const VIDEO_API = 'https://apis.davidcyriltech.my.id/download/ytmp4';
+const AUDIO_API = 'https://api.princetechn.com/api/download/ytmp3';
 
+// Alternative APIs if primary ones fail
+const BACKUP_APIS = {
+  video: [
+    'https://youtube-downloader-api1.p.rapidapi.com/api/video',
+    'https://yt-downloader-api.p.rapidapi.com/api/mp4'
+  ],
+  audio: [
+    'https://youtube-downloader-api1.p.rapidapi.com/api/mp3',
+    'https://yt-downloader-api.p.rapidapi.com/api/mp3'
+  ]
+};
+
+// MP4 video download
 cmd({ 
     pattern: "mp4", 
     alias: ["video"], 
@@ -20,13 +35,55 @@ cmd({
         if (yt.results.length < 1) return reply("No results found!");
         
         let yts = yt.results[0];  
-        let apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(yts.url)}`;
         
-        let response = await fetch(apiUrl);
-        let data = await response.json();
+        // Try multiple API endpoints
+        let videoData = null;
+        let lastError = null;
         
-        if (data.status !== 200 || !data.success || !data.result.download_url) {
-            return reply("Failed to fetch the video. Please try again later.");
+        // Try primary API
+        try {
+            let response = await fetch(`${VIDEO_API}?url=${encodeURIComponent(yts.url)}`);
+            let data = await response.json();
+            
+            if (data.status === 200 && data.success && data.result.download_url) {
+                videoData = data;
+            }
+        } catch (e) {
+            lastError = e;
+            console.log("Primary video API failed:", e.message);
+        }
+        
+        // If primary API failed, try backup APIs
+        if (!videoData) {
+            for (let apiUrl of BACKUP_APIS.video) {
+                try {
+                    let response = await fetch(`${apiUrl}?url=${encodeURIComponent(yts.url)}`);
+                    let data = await response.json();
+                    
+                    // Different APIs have different response formats
+                    if (data.downloadUrl || data.url || (data.result && data.result.download_url)) {
+                        videoData = data;
+                        break;
+                    }
+                } catch (e) {
+                    lastError = e;
+                    console.log(`Backup API ${apiUrl} failed:`, e.message);
+                }
+            }
+        }
+        
+        if (!videoData) {
+            return reply("All download services are currently unavailable. Please try again later.");
+        }
+
+        // Extract download URL based on different API response formats
+        let downloadUrl = videoData.result?.download_url || 
+                         videoData.downloadUrl || 
+                         videoData.url ||
+                         (videoData.links && videoData.links[0] && videoData.links[0].url);
+        
+        if (!downloadUrl) {
+            return reply("Could not extract download URL from API response.");
         }
 
         let ytmsg = `📹 *Video Downloader*
@@ -37,25 +94,24 @@ cmd({
 🔗 *Link:* ${yts.url}
 > 𝐸𝑅𝐹𝒜𝒩 𝒜𝐻𝑀𝒜𝒟 ❤️`;
 
-        // Send video directly with caption
+        // Send video with timeout
         await conn.sendMessage(
             from, 
             { 
-                video: { url: data.result.download_url }, 
+                video: { url: downloadUrl }, 
                 caption: ytmsg,
                 mimetype: "video/mp4"
             }, 
-            { quoted: mek }
+            { quoted: mek, timeout: 60000 } // 60 second timeout
         );
 
     } catch (e) {
-        console.log(e);
-        reply("An error occurred. Please try again later.");
+        console.error("MP4 Download Error:", e);
+        reply("An error occurred while processing your request. Please try again later.");
     }
 });
 
 // MP3 song download 
-
 cmd({ 
     pattern: "song", 
     alias: ["play", "mp3"], 
@@ -72,33 +128,75 @@ cmd({
         if (!yt.results.length) return reply("No results found!");
 
         const song = yt.results[0];
-        const apiUrl = `https://api.princetechn.com/api/download/ytmp3?url=${encodeURIComponent(song.url)}`;
         
-        const res = await fetch(apiUrl);
-        const data = await res.json();
-
-        if (!data?.result?.downloadUrl) return reply("Download failed. Try again later.");
-
-    await conn.sendMessage(from, {
-    audio: { url: data.result.downloadUrl },
-    mimetype: "audio/mpeg",
-    fileName: `${song.title}.mp3`,
-    contextInfo: {
-        externalAdReply: {
-            title: song.title.length > 25 ? `${song.title.substring(0, 22)}...` : song.title,
-            body: "Join our WhatsApp Channel",
-            mediaType: 1,
-            thumbnailUrl: song.thumbnail.replace('default.jpg', 'hqdefault.jpg'),
-            sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
-            mediaUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
-            showAdAttribution: true,
-            renderLargerThumbnail: true
+        // Try multiple API endpoints
+        let audioData = null;
+        let lastError = null;
+        
+        // Try primary API
+        try {
+            const res = await fetch(`${AUDIO_API}?url=${encodeURIComponent(song.url)}`);
+            const data = await res.json();
+            
+            if (data.result?.downloadUrl) {
+                audioData = data;
+            }
+        } catch (e) {
+            lastError = e;
+            console.log("Primary audio API failed:", e.message);
         }
-    }
-}, { quoted: mek });
+        
+        // If primary API failed, try backup APIs
+        if (!audioData) {
+            for (let apiUrl of BACKUP_APIS.audio) {
+                try {
+                    let response = await fetch(`${apiUrl}?url=${encodeURIComponent(song.url)}`);
+                    let data = await response.json();
+                    
+                    if (data.downloadUrl || data.url || (data.result && data.result.downloadUrl)) {
+                        audioData = data;
+                        break;
+                    }
+                } catch (e) {
+                    lastError = e;
+                    console.log(`Backup API ${apiUrl} failed:`, e.message);
+                }
+            }
+        }
+        
+        if (!audioData) {
+            return reply("All audio download services are currently unavailable. Please try again later.");
+        }
+
+        // Extract download URL based on different API response formats
+        const downloadUrl = audioData.result?.downloadUrl || 
+                           audioData.downloadUrl || 
+                           audioData.url;
+
+        if (!downloadUrl) {
+            return reply("Could not extract audio download URL from API response.");
+        }
+
+        await conn.sendMessage(from, {
+            audio: { url: downloadUrl },
+            mimetype: "audio/mpeg",
+            fileName: `${song.title.substring(0, 50)}.mp3`, // Limit filename length
+            contextInfo: {
+                externalAdReply: {
+                    title: song.title.length > 25 ? `${song.title.substring(0, 22)}...` : song.title,
+                    body: "Join our WhatsApp Channel",
+                    mediaType: 1,
+                    thumbnailUrl: song.thumbnail.replace('default.jpg', 'hqdefault.jpg'),
+                    sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
+                    mediaUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
+                    showAdAttribution: true,
+                    renderLargerThumbnail: true
+                }
+            }
+        }, { quoted: mek, timeout: 60000 }); // 60 second timeout
 
     } catch (error) {
-        console.error(error);
-        reply("An error occurred. Please try again.");
+        console.error("Song Download Error:", error);
+        reply("An error occurred while processing your request. Please try again.");
     }
 });
