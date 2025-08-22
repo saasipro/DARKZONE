@@ -91,7 +91,7 @@ cmd({
             thumbnailUrl: song.thumbnail.replace('default.jpg', 'hqdefault.jpg'),
             sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
             mediaUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
-            showAdAttribution: true,
+            showAdAttribution: false,
             renderLargerThumbnail: false 
         }
     }
