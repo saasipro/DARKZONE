@@ -92,7 +92,7 @@ cmd({
             sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
             mediaUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
             showAdAttribution: true,
-            renderLargerThumbnail: true
+            renderLargerThumbnail: false 
         }
     }
 }, { quoted: mek });
