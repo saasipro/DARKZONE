@@ -86,7 +86,7 @@ cmd({
     contextInfo: {
         externalAdReply: {
             title: song.title.length > 25 ? `${song.title.substring(0, 22)}...` : song.title,
-            body: "Join our WhatsApp Channel",
+            body: "THIS IS DARKZONE BABY",
             mediaType: 1,
             thumbnailUrl: song.thumbnail.replace('default.jpg', 'hqdefault.jpg'),
             sourceUrl: 'https://whatsapp.com/channel/0029Vb5dDVO59PwTnL86j13J',
